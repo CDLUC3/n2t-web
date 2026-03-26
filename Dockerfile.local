@@ -1,5 +1,5 @@
 # ---- Base image ----
-FROM 671846987296.dkr.ecr.us-west-2.amazonaws.com/docker-hub/library/nginx:stable
+FROM nginx:stable
 
 # Set working directory
 WORKDIR /app
@@ -15,6 +15,6 @@ RUN rm -f /etc/nginx/sites-enabled/default
 RUN mkdir -p /var/run/nginx
 
 # Document the exposed port
-EXPOSE 18880
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
