@@ -1,7 +1,5 @@
 # ---- Base image ----
-ARG BASE_IMAGE=public.ecr.aws/amazonlinux/amazonlinux:2023
-
-FROM $BASE_IMAGE
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023
 
 RUN dnf install -y nginx && dnf clean all
 
