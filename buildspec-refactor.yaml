@@ -46,7 +46,6 @@ phases:
 
   build:
     commands:
-      - echo "Running build - started on `date`"
       - echo Building the Docker image...
       - cd $CODEBUILD_SRC_DIR
       - docker buildx build --platform linux/amd64 -f Dockerfile.aws -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
@@ -57,7 +56,6 @@ phases:
   post_build:
     commands:
       # Push the Docker image to the ECR repository.
-      - echo Build completed on `date`
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
       - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-latest
