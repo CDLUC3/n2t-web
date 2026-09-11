@@ -6,42 +6,60 @@ phases:
       nodejs: 22
   pre_build:
     commands:
-      # Set some ENV variables here because CF only allows a limit of 1000 characters in the
-      # EnvironmentVariable config for the Pipeline action :(
-      - export AWS_VERSION=$(aws --version)
+      - echo "Supplied Vars"
+      - echo "AWS_REGION=${AWS_REGION}"
+      - echo "ECR_REGISTRY=${ECR_REGISTRY}"
+      - echo "ECR_REPOSITORY_NAME=${ECR_REPOSITORY_NAME}"
+      - echo "Full Environment"
+      - env | sort
 
-      # Fetch the ECR repository name
-      - echo $ECR_REPOSITORY_URI >> .ecr
-      - export SHORT_ECR_URI=$(awk '{gsub("$ECR_REPOSITORY_NAME", "");print}' .ecr)
-      - rm .ecr
-
-      # Set the repository URI to your ECR image and add an image tag with the first seven characters of the Git
-      # commit ID of the source.
       - echo Logging in to Amazon ECR ...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $SHORT_ECR_URI
-      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}"
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+      # Generate image tags
+      #
+      # get the first 7 chars of commit id provide by codebuild
+      - COMMIT="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}"
+      # Get release or semantic version tags for commit
+      - RELEASE_TAG=$(git tag --points-at $COMMIT | egrep "^v[0-9]+\.[0-9]+\.[0-9]+$" || echo '')
+      - SEMVER_TAG=$(git tag --points-at $COMMIT | egrep "^v[0-9]+\.[0-9]+\.[0-9]_\w+$" || echo '')
+      # Get any other tags for commit
+      - OTHER_TAG=$(git tag --points-at $COMMIT | egrep -v "^v[0-9]+\.[0-9]+\.[0-9]+" || echo '')
+      - |
+        if [ -n "$RELEASE_TAG" ]; then
+            IMAGE_TAG=$RELEASE_TAG
+        elif [ -n "$SEMVER_TAG" ]; then
+            IMAGE_TAG=$SEMVER_TAG
+        else
+            IMAGE_TAG=$OTHER_TAG
+        fi
+      - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d")
+
+      # debug tags
+      - echo "COMMIT=$COMMIT"
+      - echo "RELEASE_TAG=$RELEASE_TAG"
+      - echo "SEMVER_TAG=$SEMVER_TAG"
+      - echo "OTHER_TAG=$OTHER_TAG"
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+      - echo "BUILD_DATE=$BUILD_DATE"
+          
 
   build:
-      commands:
-        - echo "Running build - started on `date`"
-        - echo Building the Docker image...
-        - cd $CODEBUILD_SRC_DIR
-        - docker buildx build --platform linux/amd64 -f Dockerfile.aws -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+    commands:
+      - echo "Running build - started on `date`"
+      - echo Building the Docker image...
+      - cd $CODEBUILD_SRC_DIR
+      - docker buildx build --platform linux/amd64 -f Dockerfile.aws -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-latest
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+
 
   post_build:
     commands:
-      # Push the Docker image to the ECR repository. Fargate will pick it up an deploy automatically
+      # Push the Docker image to the ECR repository.
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
-      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
-
-      - echo Writing image definitions file...
-      - printf '[{"name":"%s","imageUri":"%s"}]' $TASK_DEFINITION_CONTAINER_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-
-      - echo Build completed on `date`
-
-artifacts:
-  # The Deploy step is expecting this name
-  files: imagedefinitions.json
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-latest
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
 
