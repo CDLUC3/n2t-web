@@ -7,6 +7,8 @@ phases:
   pre_build:
     commands:
       - echo "Supplied Vars"
+      - echo "ENV=${ENV}"
+      - echo "TASKDEF_IMAGETAG=${TASKDEF_IMAGETAG}"
       - echo "AWS_REGION=${AWS_REGION}"
       - echo "ECR_REGISTRY=${ECR_REGISTRY}"
       - echo "ECR_REPOSITORY_NAME=${ECR_REPOSITORY_NAME}"
@@ -15,6 +17,13 @@ phases:
 
       - echo Logging in to Amazon ECR ...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+      # is this the initial build?
+      - |
+        aws ecr describe-images \
+          --repository-name ${ECR_REPOSITORY_NAME}" \
+          --image-ids imageTag=TASKDEF_IMAGETAG \
+          2>&1 > /dev/null && INITIAL_BUILD="true" || INITIAL_BUILD="false"
 
       # Generate image tags
       #
@@ -42,6 +51,7 @@ phases:
       - echo "OTHER_TAG=$OTHER_TAG"
       - echo "IMAGE_TAG=$IMAGE_TAG"
       - echo "BUILD_DATE=$BUILD_DATE"
+      - echo "INITIAL_BUILD=$INITIAL_BUILD"
           
 
   build:
@@ -50,8 +60,6 @@ phases:
       - echo Building the Docker image...
       - cd $CODEBUILD_SRC_DIR
       - docker buildx build --platform linux/amd64 -f Dockerfile.aws -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
-      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-latest
-      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
 
 
   post_build:
@@ -60,6 +68,13 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
-      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-latest
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
       - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      - |
+        if [ "$INITIAL_BUILD" == "true" ]; then 
+          docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+        fi
 
