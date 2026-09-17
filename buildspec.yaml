@@ -23,7 +23,7 @@ phases:
         aws ecr describe-images \
           --repository-name ${ECR_REPOSITORY_NAME} \
           --image-ids imageTag=${TASKDEF_IMAGETAG} \
-          2>&1 > /dev/null && INITIAL_BUILD="true" || INITIAL_BUILD="false"
+          2>&1 > /dev/null && INITIAL_BUILD="false" || INITIAL_BUILD="true"
 
       # Generate image tags
       #
