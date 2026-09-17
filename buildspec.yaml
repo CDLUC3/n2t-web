@@ -7,13 +7,13 @@ phases:
   pre_build:
     commands:
       - echo "Supplied Vars"
-      - echo "ENV=${ENV}"
-      - echo "TASKDEF_IMAGETAG=${TASKDEF_IMAGETAG}"
       - echo "AWS_REGION=${AWS_REGION}"
       - echo "ECR_REGISTRY=${ECR_REGISTRY}"
       - echo "ECR_REPOSITORY_NAME=${ECR_REPOSITORY_NAME}"
-      - echo "Full Environment"
-      - env | sort
+      - echo "TASKDEF_IMAGETAG=${TASKDEF_IMAGETAG}"
+      # for debugging:
+      #- echo "Full Environment"
+      #- env | sort
 
       - echo Logging in to Amazon ECR ...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
