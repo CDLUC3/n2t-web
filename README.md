@@ -16,3 +16,20 @@ Sceptre Deployment
 two cycles:
 - tag push builds
 - scheduled builds
+
+application updates
+  triggers on git tag push to repo
+  assigns built image the following tags:
+  - <git-tag>
+  - <git-tag>-<timestamp>
+
+  example (assume git tag is semver "v2.4.6"):
+  - v2.4.6
+  - v2.4.6-20260910
+
+regular patching updates
+  triggers on AWS::scheduler::schedule
+  retrive current deployed tag from manifest (ssm)
+  checkout deployed tag
+  assign tags as above
+
