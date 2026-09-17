@@ -12,3 +12,7 @@ Sceptre Deployment
 ------------------
 
 `buildspec.yaml` pushes images to ECR repository based on git tags.
+
+two cycles:
+- tag push builds
+- scheduled builds
