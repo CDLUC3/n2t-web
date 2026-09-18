@@ -21,7 +21,7 @@ phases:
       - |
         if [ -n "$SCHEDULED_BUILD" -a "$SCHEDULED_BUILD" == "true" ]; then
           echo "Available git tag refs:"
-          git --no-pager --tag
+          git --no-pager tag
           DEPLOYED_RELEASE=$(aws ssm get-parameter --name $SSM_PATH --query "Parameter.Value")
           echo "DEPLOYED_RELEASE=$DEPLOYED_RELEASE"
           git checkout $DEPLOYED_RELEASE
