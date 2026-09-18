@@ -20,8 +20,10 @@ phases:
       # Handle scheduled builds
       - |
         if [ -n "$SCHEDULED_BUILD" -a "$SCHEDULED_BUILD" == "true" ]; then
-        DEPLOYED_RELEASE=$(aws ssm get-parameter --name $SSM_PATH --query "Parameter.Value")
-          echo $DEPLOYED_RELEASE
+          echo "Available git tag refs:"
+          git --no-pager --tag
+          DEPLOYED_RELEASE=$(aws ssm get-parameter --name $SSM_PATH --query "Parameter.Value")
+          echo "DEPLOYED_RELEASE=$DEPLOYED_RELEASE"
           git checkout $DEPLOYED_RELEASE
           if [ "$?" != "0" ]; then
             echo "Attempt to run git checkout $DEPLOYED_RELEASE failed. Exiting!"
