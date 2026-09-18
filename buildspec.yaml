@@ -11,9 +11,23 @@ phases:
       - echo "ECR_REGISTRY=${ECR_REGISTRY}"
       - echo "ECR_REPOSITORY_NAME=${ECR_REPOSITORY_NAME}"
       - echo "TASKDEF_IMAGETAG=${TASKDEF_IMAGETAG}"
+      - echo "SSM_PATH=${SSM_PATH}"
+      - echo "SCHEDULED_BUILD=${SCHEDULED_BUILD}"
       # for debugging:
       #- echo "Full Environment"
       #- env | sort
+
+      # Handle scheduled builds
+      - |
+        if [ -n "$SCHEDULED_BUILD" -a "$SCHEDULED_BUILD" == "true" ]; then
+        DEPLOYED_RELEASE=$(aws ssm get-parameter --name $SSM_PATH --query "Parameter.Value")
+          echo $DEPLOYED_RELEASE
+          git checkout $DEPLOYED_RELEASE
+          if [ "$?" != "0" ]; then
+            echo "Attempt to run git checkout $DEPLOYED_RELEASE failed. Exiting!"
+            exit 1
+          fi
+        fi
 
       - echo Logging in to Amazon ECR ...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
@@ -42,7 +56,7 @@ phases:
         else
             IMAGE_TAG=$OTHER_TAG
         fi
-      - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d")
+      - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d.%H.%M.%S")
 
       # debug tags
       - echo "COMMIT=$COMMIT"
