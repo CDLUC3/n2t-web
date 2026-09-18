@@ -13,9 +13,9 @@ phases:
       - echo "TASKDEF_IMAGETAG=${TASKDEF_IMAGETAG}"
       - echo "SSM_PATH=${SSM_PATH}"
       - echo "SCHEDULED_BUILD=${SCHEDULED_BUILD}"
-      # for debugging:
-      #- echo "Full Environment"
-      #- env | sort
+       for debugging:
+      - echo "Full Environment"
+      - env | sort
 
       # Handle scheduled builds.
       # Basically, codepipeline sources a designated branch.
