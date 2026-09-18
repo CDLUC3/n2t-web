@@ -28,11 +28,10 @@ phases:
           echo
           #echo "Available git tag refs:"
           #git --no-pager tag
-          echo 'Get our "DEPLOYED_RELEASE" from deployment manifest
+          echo 'Get our "DEPLOYED_RELEASE" from deployment manifest'
           DEPLOYED_RELEASE=$(aws --output text ssm get-parameter --name $SSM_PATH --query Parameter.Value)
           echo "DEPLOYED_RELEASE=$DEPLOYED_RELEASE"
-          echo 'Checkout 
-          git checkout DEPLOYED_RELEASE as a git tag
+          echo "checkout DEPLOYED_RELEASE $DEPLOYED_RELEASE as a git tag"
           if [ "$?" != "0" ]; then
             echo "Attempt to run git checkout $DEPLOYED_RELEASE failed. Exiting!"
             exit 1
