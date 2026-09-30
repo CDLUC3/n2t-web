@@ -27,6 +27,8 @@ phases:
         - echo Building the Docker image...
         - cd $CODEBUILD_SRC_DIR
         - docker buildx build --platform linux/amd64 -f Dockerfile.aws -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+        - docker tag $ECR_REPOSITORY_URI:latest
+
 
   post_build:
     commands:
@@ -35,6 +37,7 @@ phases:
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
       - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
 
       - echo Writing image definitions file...
       - printf '[{"name":"%s","imageUri":"%s"}]' $TASK_DEFINITION_CONTAINER_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
